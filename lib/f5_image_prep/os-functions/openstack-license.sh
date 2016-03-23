@@ -16,7 +16,7 @@
 #
 
 shopt -s extglob
-source /etc/vadc-init/os-functions/openstack-datasource.sh
+source /config/os-functions/openstack-datasource.sh
 
 # BIG-IP licensing settings
 readonly BIGIP_LICENSE_FILE="/config/bigip.license"

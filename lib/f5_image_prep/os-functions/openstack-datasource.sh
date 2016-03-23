@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-OS_CONFIG_DIR="/shared/vadc/openstack"
+OS_CONFIG_DIR="/config"
 OS_USER_DATA_TMP_FILE="$OS_CONFIG_DIR/openstack-user-data.json"
 OS_META_DATA_TMP_FILE="$OS_CONFIG_DIR/openstack-meta-data.json"
 OS_USER_DATA_LOCAL_FILE="/config/user-data.json"

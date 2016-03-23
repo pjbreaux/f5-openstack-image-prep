@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-source /etc/vadc-init/os-functions/openstack-datasource.sh
+source /config/os-functions/openstack-datasource.sh
 
 # BIG-IP password settings
 readonly OS_CHANGE_PASSWORDS=true

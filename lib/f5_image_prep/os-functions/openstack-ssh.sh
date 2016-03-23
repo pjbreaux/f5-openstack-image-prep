@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-source /etc/vadc-init/os-functions/openstack-datasource.sh
+source /config/os-functions/openstack-datasource.sh
 
 # OpenStack SSH public key injection settings
 readonly OS_SSH_KEY_INJECT_ENABLED=true
