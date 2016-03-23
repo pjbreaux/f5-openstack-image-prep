@@ -94,11 +94,11 @@ function wait_tmm_started() {
 function main() {
 
     # Check if this image was patched.
-    $(grep -q "NO_VADC_OPENSTACK_INIT" /config/startup)
-    if [[ $? == 0 ]]; then
-		log "Yielding to special startup script for VE initialization in OpenStack"
-		exit 0;
-    fi
+    #$(grep -q "NO_VADC_OPENSTACK_INIT" /config/startup)
+    #if [[ $? == 0 ]]; then
+	#	log "Yielding to special startup script for VE initialization in OpenStack"
+	#	exit 0;
+    #fi
 
     # If the configuration dir or startup file doesn't exist we will assume that this script
     # has not been completed and that this is the first time running it.
