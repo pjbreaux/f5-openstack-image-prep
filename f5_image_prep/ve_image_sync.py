@@ -28,7 +28,7 @@ STARTUPSCRIPT = \
     '/home/imageprep/f5-openstack-image-prep/lib/f5_image_prep/startup'
 STARTUPFUNCS = \
     '/home/imageprep/f5-openstack-image-prep/lib/f5_image_prep/' \
-    'openstack-functions/'
+    'os-functions/'
 WORKDIR = os.environ['HOME']
 
 

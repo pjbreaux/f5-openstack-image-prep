@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2015-2016 F5 Networks Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-#!/bin/bash
 
 function validate_packages_debian() {
     is_qemu_utils_installed=`dpkg --get-selections qemu-utils|grep install|wc -l`
@@ -76,6 +76,93 @@ function validate_packages() {
         exit 1
     fi
 }
+
+function validate_inputs() {
+    if ! [ -f $startup_file ]; then
+        echo "startup file $startup_file does not exist"
+        badusage
+    fi
+
+    if ! [ -d $startup_functions ]; then
+        echo "startup functions directory does not exist"
+        badusage
+    fi
+
+    if ! [ $userdata_file == 'none' ]; then
+        if ! [ -f $userdata_file ]; then
+            echo "default userdata JSON file $userdata_file does not exist"
+            badusage
+        fi
+    fi
+
+    if [ -n "$baseisofile" -a -z "$hotfixisofile" ]; then
+        echo "Must specify hotfix iso when base iso specified"
+        badusage
+    fi
+
+    if [ -n "$hotfixisofile" -a -z "$baseisofile" ]; then
+        echo "Must specify base iso when hotfix iso specified"
+        badusage
+    fi
+}
+
+function get_dev() {
+    ls -l /dev/vg-db-hda | grep $1 | cut -d'>' -f2 | cut -d'/' -f2-
+}
+
+function inject_files() {
+    if [ -f $startup_file ]; then
+        cp $startup_file /mnt/bigip-config/startup
+    fi
+
+    if [ -d "$startup_functions" ]; then
+        cp -R $startup_functions /mnt/bigip-config/
+    fi
+
+    if $firstboot_file; then
+        touch /mnt/bigip-config/firstboot > /dev/null 2>&1
+    fi
+    if [ -f $userdata_file ]; then
+        cp $userdata_file /mnt/bigip-config
+    fi
+
+    if [ -n "$baseisofile" ]; then
+        mount /dev/`get_dev dat.share` /mnt/bigip-shared
+        cp $baseisofile /mnt/bigip-shared/images
+        cp $hotfixisofile /mnt/bigip-shared/images
+    fi
+
+    if [ -n "$baseisofile" ]; then
+        if [ ! -f "$baseisofile" ]; then
+            if [ ! -f "$temp_dir/../added/$baseisofile" ]; then
+                echo "Can't find base iso file $baseisofile"
+                badusage
+            else
+                baseisofile="$temp_dir/../added/$baseisofile"
+            fi
+        fi
+    fi
+    if [ -n "$hotfixisofile" ]; then
+        if [ ! -f "$hotfixisofile" ]; then
+            if [ ! -f "$temp_dir/../added/$hotfixisofile" ]; then
+                echo "Can't find hotfix iso file $hotfixisofile"
+                badusage
+            else
+                hotfixisofile="$temp_dir/../added/$hotfixisofile"
+            fi
+        fi
+    fi
+
+}
+
+function load_nbd() {
+    is_nbd_loaded=`lsmod|grep nbd|wc -l`
+
+    if [ $is_nbd_loaded == 0 ]; then
+        modprobe nbd max_part=32
+    fi
+}
+
 temp_dir="$HOME/.f5-image-prep/tmp"
 userdata_file='none'
 firstboot_file=false
@@ -154,43 +241,12 @@ while getopts :s:d:u:ft:o:b:h: opt "$@"; do
    esac
 done
       
-if ! [ -f $startup_file ]; then
-    echo "startup file $startup_file does not exist"
-    badusage
-fi
-
-if ! [ -d $startup_functions ]; then
-    echo "startup functions directory does not exist"
-    badusage
-fi
-
-if ! [ $userdata_file == 'none' ]; then
-    if ! [ -f $userdata_file ]; then
-        echo "default userdata JSON file $userdata_file does not exist"
-        badusage
-    fi
-fi
-
-if [ -n "$baseisofile" -a -z "$hotfixisofile" ]; then
-    echo "Must specify hotfix iso when base iso specified"
-    badusage
-fi
-
-if [ -n "$hotfixisofile" -a -z "$baseisofile" ]; then
-    echo "Must specify base iso when hotfix iso specified"
-    badusage
-fi
-
-is_nbd_loaded=`lsmod|grep nbd|wc -l`
-
-if [ $is_nbd_loaded == 0 ]; then
-    modprobe nbd max_part=32
-fi
-
+validate_inputs
+load_nbd
 validate_packages
 
 # exit on error
-set -xe
+set -x
 
 mkdir -p $temp_dir
 
@@ -220,26 +276,6 @@ function newfilename {
     echo $newfile
 }
 
-if [ -n "$baseisofile" ]; then
-    if [ ! -f "$baseisofile" ]; then
-        if [ ! -f "$temp_dir/../added/$baseisofile" ]; then
-            echo "Can't find base iso file $baseisofile"
-            badusage
-        else
-            baseisofile="$temp_dir/../added/$baseisofile"
-        fi
-    fi 
-fi
-if [ -n "$hotfixisofile" ]; then
-    if [ ! -f "$hotfixisofile" ]; then
-        if [ ! -f "$temp_dir/../added/$hotfixisofile" ]; then
-            echo "Can't find hotfix iso file $hotfixisofile"
-            badusage
-        else
-            hotfixisofile="$temp_dir/../added/$hotfixisofile"
-        fi
-    fi 
-fi
 
 # did we get a full path?
 if [ -f "$oldfile" ]; then
@@ -282,29 +318,13 @@ fi
 echo "Waiting 15 seconds"
 sleep 15
 
-function get_dev {
-    ls -l /dev/vg-db-hda | grep $1 | cut -d'>' -f2 | cut -d'/' -f2-
-}
+# Unmount config and shared incase previous attempt to patch failed
+umount /mnt/bigip-config || [ $? -eq 1 ]
+umount /mnt/bigip-shared || [ $? -eq 1 ]
 
 mount /dev/`get_dev set.1._config` /mnt/bigip-config
-cp $startup_file /mnt/bigip-config/startup
 
-if [ -d "$startup_functions" ]; then
-    cp -R $startup_functions /mnt/bigip-config/
-fi
-
-if $firstboot_file; then
-    touch /mnt/bigip-config/firstboot > /dev/null 2>&1
-fi
-if [ -f $userdata_file ]; then
-    cp $userdata_file /mnt/bigip-config
-fi
-
-if [ -n "$baseisofile" ]; then
-    mount /dev/`get_dev dat.share` /mnt/bigip-shared
-    cp $baseisofile /mnt/bigip-shared/images
-    cp $hotfixisofile /mnt/bigip-shared/images
-fi
+inject_files
 
 sleep 2
 umount /mnt/bigip-config
@@ -316,4 +336,5 @@ sleep 2
 vgchange -an
 sleep 2
 qemu-nbd -d /dev/nbd0
-set +xe
+echo "Patched image located at $temp_dir/$newfile"
+set +x
