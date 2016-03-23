@@ -336,4 +336,5 @@ sleep 2
 vgchange -an
 sleep 2
 qemu-nbd -d /dev/nbd0
+echo "Patched image located at $temp_dir/$newfile"
 set +x
