@@ -13,10 +13,8 @@
 # limitations under the License.
 #
 
-from f5_image_prep.openstack.glance import GlanceLib
 from f5_image_prep.openstack.openstack import get_creds
 
-import os
 import pytest
 import subprocess
 import sys
@@ -27,19 +25,15 @@ VEIS_SCRIPT = \
     '/home/imageprep/f5-openstack-image-prep/f5_image_prep/ve_image_sync.py'
 STARTUP_SCRIPT = \
     '/home/imageprep/f5-openstack-image-prep/lib/f5_image_prep/startup.tar'
-os.environ['OS_TENANT_NAME'] = '<os_tenant>'
-os.environ['OS_USERNAME'] = '<os_username>'
-os.environ['OS_PASSWORD'] = '<os_password>'
-os.environ['OS_AUTH_URL'] = 'http://<keystone_ip>:5000/v2.0'
 TEST_IMG = None
 
 
 @pytest.fixture
-def VEImageSync(request):
+def VEImageSync(request, glanceclientmanager):
     from f5_image_prep.ve_image_sync import VEImageSync as veis
 
     def delete_image():
-        GlanceLib(get_creds()).glance_client.images.delete(TEST_IMG.id)
+        glanceclientmanager.images.delete(TEST_IMG.id)
 
     request.addfinalizer(delete_image)
 
@@ -48,10 +42,10 @@ def VEImageSync(request):
     return veis(creds, BIGIPFILE, work_dir)
 
 
-def test_image_sync(VEImageSync):
+def test_image_sync(VEImageSync, glanceclientmanager):
     global TEST_IMG
     TEST_IMG = VEImageSync.sync_image()
-    imgs = GlanceLib(get_creds()).glance_client.images.list()
+    imgs = glanceclientmanager.images.list()
     assert TEST_IMG.id in [img.id for img in imgs]
 
 

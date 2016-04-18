@@ -3,4 +3,5 @@ python-glanceclient
 hacking
 pytest
 pytest-cov
+f5-openstack-test
 Sphinx==1.3.5
