@@ -29,8 +29,9 @@ TEST_IMG = None
 
 
 @pytest.fixture
-def VEImageSync(request, glanceclientmanager):
+def VEImageSync(request, set_env_vars, glanceclientmanager):
     from f5_image_prep.ve_image_sync import VEImageSync as veis
+    set_env_vars
 
     def delete_image():
         glanceclientmanager.images.delete(TEST_IMG.id)

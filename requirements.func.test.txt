@@ -1,7 +1,4 @@
 # These packages are required when testing the module
-python-glanceclient
-hacking
-pytest
+git+https://github.com/F5Networks/f5-openstack-test.git@liberty
 pytest-cov
-f5-openstack-test
 Sphinx==1.3.5
