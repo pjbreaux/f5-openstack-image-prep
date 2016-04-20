@@ -40,7 +40,7 @@ def VEImageSync(request, set_env_vars, glanceclientmanager):
 
     creds = get_creds()
     work_dir = sys.path[0]
-    return veis(creds, BIGIPFILE, work_dir)
+    return veis(creds, BIGIPFILE, STARTUP_SCRIPT, work_dir)
 
 
 def test_image_sync(VEImageSync, glanceclientmanager):
