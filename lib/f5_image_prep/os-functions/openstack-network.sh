@@ -43,6 +43,10 @@ function get_mgmt_ip() {
     echo -n $(/sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}')
 }
 
+function get_dns_suffix() {
+    echo -n $(/bin/grep search /etc/resolv.conf | awk '{print $2}')
+}
+
 function set_tmm_if_selfip() {
     local tmm_if=$1
     local address=$2

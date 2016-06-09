@@ -151,6 +151,13 @@ function main() {
 			# Wait for mcpd to be ready to serialize, 20 sec to accomodate a very slow VE
 			sleep 20
 
+            # Set the hostname to the pattern host-<mgmt_ip>.<dns_suffix>
+            mgmt_ip=$(get_mgmt_ip)
+            dns_suffix=$(get_dns_suffix)
+            if [ -n $mgmt_ip ] && [ -n $dns_suffix ]; then
+                tmsh modify sys global-settings hostname host-$mgmt_ip.$dns_suffix
+            fi
+
 			# Save config
 			tmsh save sys config | eval $LOGGER_CMD
 
