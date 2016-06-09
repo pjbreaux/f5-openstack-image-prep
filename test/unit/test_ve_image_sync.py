@@ -32,7 +32,14 @@ class FakeImageModel(object):
 def VEImageSync():
     with mock.patch('f5_image_prep.ve_image_sync.os.path.isfile') as mock_file:
         mock_file.return_value = True
-        return veis(mock.MagicMock(), '/test/img.qcow2', '/test.tar')
+        return veis(mock.MagicMock(), '/test/img.qcow2', False, '/test/')
+
+
+@pytest.fixture
+def VEImageSyncPublicImage():
+    with mock.patch('f5_image_prep.ve_image_sync.os.path.isfile') as mock_file:
+        mock_file.return_value = True
+        return veis(mock.MagicMock(), '/test/img.qcow2', True, '/test/')
 
 
 def test___init__(VEImageSync):
@@ -110,6 +117,25 @@ def test__upload_image_to_glance(VEImageSync):
         with mock.patch('__builtin__.open') as mock_file_open:
             mock_file_open.return_value = 'file_content'
             VEImageSync._upload_image_to_glance('img.qcow2')
+        assert mock_glance().glance_client.images.create.call_args == \
+            mock.call(
+                name='img',
+                disk_format='qcow2',
+                container_format='bare',
+                is_public='false',
+                data='file_content'
+            )
+
+
+def test__upload_image_to_glance_public_image(VEImageSyncPublicImage):
+    with mock.patch('f5_image_prep.ve_image_sync.GlanceLib') as mock_glance:
+        mock_glance().glance_client.images.create.return_value = \
+            FakeImageModel()
+        mock_glance().glance_client.images.list.return_value = \
+            [FakeImageModel()]
+        with mock.patch('__builtin__.open') as mock_file_open:
+            mock_file_open.return_value = 'file_content'
+            VEImageSyncPublicImage._upload_image_to_glance('img.qcow2')
         assert mock_glance().glance_client.images.create.call_args == \
             mock.call(
                 name='img',
