@@ -47,7 +47,7 @@ class ImagePatchFailed(Exception):
 class VEImageSync(object):
     '''Handle synchronization of VE glance images.'''
 
-    def __init__(self, creds, imgfile, workdir=WORKDIR):
+    def __init__(self, creds, imgfile, public_image=False, workdir=WORKDIR):
         '''Initialize a VEImageSync object.
 
         :param img_location: str -- path to a VE image
@@ -56,6 +56,7 @@ class VEImageSync(object):
 
         self.os_creds = creds
         self.img_file = imgfile
+        self.public_image = 'true' if public_image else 'false'
 
         if not os.path.isfile(self.img_file):
             msg = 'Local file {} does not exist'.format(self.img_file)
@@ -106,7 +107,7 @@ class VEImageSync(object):
             name=img_name,
             disk_format=DISKFORMAT,
             container_format=CONTAINERFORMAT,
-            is_public='true',
+            is_public=self.public_image,
             data=open(patch_image_location, 'rb')
         )
         imgs = [img.id for img in gc.images.list()]
@@ -135,12 +136,17 @@ if __name__ == "__main__":
         default="%s" % os.environ['HOME'],
         help='Directory to save working files.'
     )
+    parser.add_argument(
+        '-p', '--public-image', dest='public_image', action='store_true',
+        help='Glance image can be public or non-public.'
+    )
     args = parser.parse_args()
 
     creds = get_creds()
     ve_image_sync = VEImageSync(
         creds,
         args.imagefile,
+        public_image=args.public_image,
         workdir=args.workingdirectory
     )
     ve_image_sync.sync_image()
