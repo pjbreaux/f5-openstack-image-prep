@@ -75,6 +75,7 @@ function set_tmm_if_selfip() {
 
     unset dhcp_enabled selfip_prefix selfip_name selfip_description selfip_allow_service vlan_prefix vlan_name
 
+    Log "In set_tmm_if_selfip with address, $address, and netmask, $netmask"
     if [[ ${address} =~ $IP_REGEX && ${netmask} =~ $IP_REGEX ]]; then
 
 	local dhcp_enabled=$(get_user_data_value {bigip}{network}{interfaces}{$tmm_if}{dhcp})
@@ -251,6 +252,7 @@ function dhcp_tmm_if() {
 
     rm -f $OS_DHCP_LEASE_FILE
 
+    Log "DHCP offer $dhcp_offer"
     echo $dhcp_offer
   fi
 }
@@ -276,6 +278,7 @@ function configure_tmm_ifs() {
     log "DHCP disabled globally, will not auto-configure any interfaces..."
 
     for interface in ${tmm_ifs}; do
+    Log "Setting up interface, $interface"
 	local tmm_if="1.${interface:3}"
 	local dhcp_enabled=$(get_user_data_value {bigip}{network}{interfaces}{$tmm_if}{dhcp})
 
@@ -293,8 +296,12 @@ function configure_tmm_ifs() {
 	vlan_name=$(get_user_data_value {bigip}{network}{interfaces}{$tmm_if}{vlan_name})
 	[[ $(is_false $vlan_name) ]] && vlan_name="${vlan_prefix}${tmm_if}"
 	tmsh list net self one-line | grep -q "vlan $vlan_name"
-
-	if [[ $? != 0 ]]; then
+    rc=$?
+    log "rc from list self one-line is $rc"
+    log "output from list self one-line for vlan $vlan_name"
+    one_line_output=$(tmsh list net self one-line | grep -q "vlan $vlan_name")
+    log "$one_line_output"
+	if [[ $rc != 0 ]]; then
 
 	    log "Configuring self IP for interface $tmm_if..."
 
